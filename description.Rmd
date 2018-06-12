@@ -1,0 +1,77 @@
+---
+title: "Data Description"
+author: "Göran Broström"
+date: "12 June 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE,comment=NA}
+knitr::opts_chunk$set(echo = TRUE,comment=NA)
+options(width = 90)
+```
+
+# Introduction
+
+The *U18006* data retrieval is tabulated for all persons of exact age 60 years somwhere between 1 November 1960 and 31 December 2013. The table can be downloaded from [my office computer](http://capa.ddb.umu.se). See **R** code below.
+
+# Data
+
+We download the data frame.
+
+```{r getdata}
+con <- url("http://capa.ddb.umu.se/data/tab_all.rds")
+se <- readRDS(con)
+close(con)
+head(se)
+```
+Showing the first six lines of *se*. For all combinations of *AR, KOMMUN, sex, civst, period, hisclass, and age*, the number of deaths (*event*) and exposure time (*exposure*) are calculated. It results in `r NROW(se)` combinations with data. There are of course many empty cells; they are not shown in the data frame.
+
+One problem is the variable *KOMMUN*: There are `r length(unique(se$KOMMUN))` unique *KOMMUN* codes in the data set, but because of some *kommun reforms* over the time, the question is how we should and can utilize this information.
+
+# Cohort information
+
+```{r agebyar}
+##knitr::kable(with(se, tapply(event, list(AR, age), sum)))
+with(se, tapply(event, list(AR, age), sum))
+```
+
+This table shows the number of deaths by age and cohort (year at age 60). *No-data combinations* are represented by *NA*.
+
+Obviously (and as expected) there is only one cohort that can be followed to the end, those aged 60 between 1960 and 1965. A naive analysis for men in this cohort could be like
+
+```{r naivecohort}
+fit <- glm(event ~ offset(log(exposure)) + hisclass + age,
+           data = se[se$AR == 1960 & se$sex == "male", ], 
+           family = poisson())
+drop1(fit, test = "Chisq")
+round(summary(fit)$coefficients[1:5, c(1, 2)], 3)
+```
+We see that both *hisclass* and age (surprise?) are highly *statistically* significant. The *none* hisclass stands out with highest mortality (The *elite* is reference). 
+
+# Period information
+
+The analogous period information.
+
+```{r agebyperiod}
+##knitr::kable(with(se, tapply(event, list(AR, age), sum)))
+with(se, tapply(event, list(period, age), sum))
+```
+
+A full period analysis is only available for *2010-2015*. For men in this period we get
+
+```{r naiveperiod}
+fit <- glm(event ~ offset(log(exposure)) + hisclass + age,
+           data = se[se$period == "2010-2015" & se$sex == "male", ], 
+           family = poisson())
+drop1(fit, test = "Chisq")
+round(summary(fit)$coefficients[1:5, c(1, 2)], 3)
+```
+
+Here the *elite* stands out with clearly lowest mortality of all.
+
+# Conclusion
+
+This is a *very preliminary* tabulation of the data in *U18006*. 
+
+*   Do data look reasonable?
+*   Future structure of our analyses?
