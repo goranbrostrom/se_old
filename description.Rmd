@@ -30,9 +30,9 @@ One problem is the variable *KOMMUN*: There are `r length(unique(se$KOMMUN))` un
 
 # Cohort information
 
-```{r agebyar}
-##knitr::kable(with(se, tapply(event, list(AR, age), sum)))
-with(se, tapply(event, list(AR, age), sum))
+```{r agebyar, results='asis'}
+knitr::kable(with(se, tapply(event, list(AR, age), sum)))
+##with(se, tapply(event, list(AR, age), sum))
 ```
 
 This table shows the number of deaths by age and cohort (year at age 60). *No-data combinations* are represented by *NA*.
